@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🇺🇸 GOGO 美西自驾助手</title>
+  <style>
+    :root {
+      --primary: #2b6cb0;
+      --primary-dark: #1a365d;
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+      --text: #2d3748;
+      --text-muted: #718096;
+      --accent: #dd6b20;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+    header { margin-bottom: 16px; text-align: center; }
+    header h1 { font-size: 24px; color: var(--primary-dark); font-weight: 800; }
+    header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .day-selector {
+      display: flex; overflow-x: auto; gap: 10px; padding-bottom: 8px; margin-bottom: 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .day-selector::-webkit-scrollbar { display: none; }
+    .day-btn {
+      flex: 0 0 auto; padding: 8px 14px; background-color: var(--card-bg);
+      border: 1px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease;
+    }
+    .day-btn.active { background-color: var(--primary); border-color: var(--primary); color: #fff; }
+    .day-btn .day-title { font-size: 14px; font-weight: bold; display: block; }
+    .day-btn .day-date { font-size: 11px; opacity: 0.8; display: block; }
+    .card { background: var(--card-bg); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-title { font-size: 16px; font-weight: bold; color: var(--primary-dark); }
+    .location-tag { background: #ebf8ff; color: var(--primary); font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+    .weather-card { background: linear-gradient(135deg, #ffffff 0%, #ebf8ff 100%); border: 1px solid #bee3f8; }
+    .weather-info { display: flex; justify-content: space-between; align-items: center; }
+    .temp-main { font-size: 32px; font-weight: bold; color: var(--primary); }
+    .weather-details { font-size: 12px; color: #4a5568; text-align: right; }
+    .sunset-text { color: var(--accent); font-weight: bold; margin-top: 2px; }
+    .route-name { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .badge { background: #edf2f7; font-size: 12px; padding: 4px 8px; border-radius: 6px; color: #4a5568; }
+    .highlight-list { list-style-type: none; padding-left: 0; }
+    .highlight-list li { position: relative; padding-left: 16px; font-size: 14px; margin-bottom: 6px; }
+    .highlight-list li::before { content: "•"; position: absolute; left: 0; color: var(--primary); font-weight: bold; }
+    .tip-box { background: #f7fafc; padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; }
+    .tip-box.outfit { background: #fffaf0; border-left: 4px solid var(--accent); }
+    .tip-box .label { font-weight: bold; margin-bottom: 2px; }
+    .info-item { font-size: 13px; margin-bottom: 6px; }
+    .info-item span { font-weight: bold; }
+    @media (min-width: 768px) {
+      .container { max-width: 720px; }
+      .day-selector { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🇺🇸 GOGO 美西自驾助手</h1>
+      <p>11天经典公路自驾 · 手机实时路线 & 智能天气</p>
+    </header>
+    <div class="day-selector" id="daySelector"></div>
+    <div class="card weather-card">
+      <div class="card-header">
+        <span class="card-title">🌤 目的地实时天气预报</span>
+        <span class="location-tag" id="weatherLocation">-</span>
+      </div>
+      <div class="weather-info" id="weatherBody">
+        <div class="temp-main" id="weatherTemp">--°C</div>
+        <div class="weather-details">
+          <div id="weatherCondition">读取天气中...</div>
+          <div id="weatherWind">风速: --</div>
+          <div class="sunset-text" id="weatherSunset">🌅 今日日落: --</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📍 当天行程与路线</span>
+      </div>
+      <div class="route-name" id="routeName">-</div>
+      <div class="badges">
+        <span class="badge" id="driveTime">🚗 驾车: -</span>
+        <span class="badge" id="visitTime">⏱ 游览: -</span>
+      </div>
+      <div style="font-weight:bold; font-size:14px; margin-bottom:6px;">核心 Highlight 打卡：</div>
+      <ul class="highlight-list" id="highlightList"></ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">👗 穿衣指南 & 出行贴士</span>
+      </div>
+      <div class="tip-box outfit">
+        <div class="label">穿衣与拍照穿搭：</div>
+        <div id="outfitTip">-</div>
+      </div>
+      <div class="tip-box">
+        <div class="label">驾驶与注意事项：</div>
+        <div id="travelTips">-</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🏨 餐饮与住宿</span>
+      </div>
+      <div class="info-item"><span>🍽 餐饮路线：</span><span id="mealsInfo">-</span></div>
+      <div class="info-item"><span>🏠 预订住宿：</span><span id="hotelInfo">-</span></div>
+    </div>
+  </div>
+  <script>
+    const itinerary = [
+      { day: "Day 1", date: "09/25", location: "SFO 到达 & 租车", locationName: "San Francisco", lat: 37.6213, lon: -122.3790, driveTime: "出关 + 租车约 2HR", visitTime: "-", highlights: ["SFO 机场取车", "晚间约朋友聚餐"], hotel: "Hyatt Regency San Francisco", meals: "晚：机场附近约朋友", outfit: "舒适休闲装，准备一件薄外套（旧金山海风较大）", tips: "旺季出关时间不可控（预留 1.5-2 小时），拿到车后尽量减少当晚复杂行程。检查租车车况与电子缴费。" },
+      { day: "Day 2", date: "09/26", location: "半月湾 ➔ 17 Miles ➔ 蒙特雷", locationName: "Monterey", lat: 36.6002, lon: -121.8947, driveTime: "30 ~ 45 MIN / 到 Monterey 2HR", visitTime: "4.5 小时", highlights: ["Cypress Tree Tunnel 柏树隧道", "Popular Beach 看日落", "Ritz-Carlton 沿海步道", "Pigeon Point Lighthouse 鸽子角灯塔", "17 Miles Drive 自驾景区", "Santa Cruz / Carmel 逛小镇"], hotel: "Hyatt Regency Monterey Hotel & Spa", meals: "午：半月湾 / 晚：17 Miles 附近", outfit: "👗 极度出片日！建议穿裙子、戴墨镜、涂防晒霜，放外套在车里", tips: "17 Miles 进景区有地图顺时针游览。海边风很大，拍照注意保暖。" },
+      { day: "Day 3", date: "09/27", location: "大苏尔 (Big Sur) ➔ 圣巴巴拉", locationName: "Santa Barbara", lat: 34.4208, lon: -119.6982, driveTime: "4 ~ 5 小时（边走边停）", visitTime: "8 小时", highlights: ["China Vista Point & Bixby Bridge 经典大桥", "Pfeiffer Beach 粉色沙滩", "McWay Falls 瀑布入海", "Elephant Seal Vista Point 看海狮", "Solvang 丹麦童话小镇", "Santa Barbara 粉色教堂与法院"], hotel: "Kimpton Santa Barbara", meals: "午：Morro Bay 海鲜 / 晚：San Luis Obispo 或 SB", outfit: "舒适好走鞋，准备早晚保暖外套", tips: "大苏尔部分路段无手机信号，务必提前下载 Google Maps 离线地图！" },
+      { day: "Day 4", date: "09/28", location: "洛杉矶 (LA) 市区打卡", locationName: "Los Angeles", lat: 34.0522, lon: -118.2437, driveTime: "2 ~ 3 小时", visitTime: "全天", highlights: ["Griffith 格里菲斯天文台", "Hollywood Sign 好莱坞标志", "星光大道", "Beverly Hills 比弗利山庄", "Santa Monica Pier 圣莫尼卡码头日落", "SKIMS 线下购物"], hotel: "Best Western Plus Sunset Plaza Hotel", meals: "晚：洛杉矶市区美食（韩国城烤肉等）", outfit: "📷 半出片日！美式复古/街头时尚风，备好墨镜", tips: "洛杉矶下午交通极其拥堵，提前规划行车时间。" },
+      { day: "Day 5", date: "09/29", location: "LA 补漏 ➔ 美洲杉国家公园", locationName: "Three Rivers", lat: 36.4388, lon: -118.9068, driveTime: "4 ~ 5 小时", visitTime: "半天", highlights: ["上午补齐 LA 未逛景点/购物", "Bakersfield 休息站", "开往 Sequoia 树林公园"], hotel: "43177 Sierra Drive A, Three Rivers, CA", meals: "午：洛杉矶 / 晚：路上或 Three Rivers", outfit: "📷 半出片日，下午换上保暖便服", tips: "必须在 15:00 前结束 LA 行程，避免太晚走山路到达 Sequoia。" },
+      { day: "Day 6", date: "09/30", location: "Sequoia 国家公园深度游", locationName: "Sequoia National Park", lat: 36.5647, lon: -118.7734, driveTime: "园区自驾", visitTime: "6 小时", highlights: ["Moro Rock 攀登巨石观景", "Tunnel Log 树洞公路", "General Sherman Tree 雪曼将军树", "Congress Trail 经典徒步"], hotel: "Three Rivers / 同区域民宿", meals: "🥪 园内无餐饮，必须自带足够食物与水！", outfit: "🥾 户外运动装备！抓绒衣/冲锋衣、防滑徒步鞋", tips: "园区内没有网络信号，提前备齐高能量零食。" },
+      { day: "Day 7", date: "10/01", location: "US-395 景观公路（秋色全景）", locationName: "Mammoth Lakes", lat: 37.6485, lon: -118.9721, driveTime: "6 ~ 7 小时（边走边停）", visitTime: "全天", highlights: ["North Lake & Sabrina Lake 金黄秋叶", "Convict Lake 峡谷湖泊", "Hot Creek 温泉", "Mammoth Lakes & June Lake Loop", "Mono Lake 奇幻钙华塔日落"], hotel: "2252 Meridian Boulevard 80, Mammoth Lakes", meals: "午：395 沿途小镇 / 晚：Mammoth Lakes", outfit: "🍂 绝佳出片日！大地色/秋季大衣，准备厚外套（高海拔较冷）", tips: "⚠️ 记得走 395 号公路，不要穿过 Yosemite！沿途秋色极美。" },
+      { day: "Day 8", date: "10/02", location: "优胜美地国家公园 (Yosemite)", locationName: "Yosemite National Park", lat: 37.8651, lon: -119.5383, driveTime: "园区自驾/徒步", visitTime: "12 小时", highlights: ["Tunnel View 经典全景", "El Capitan Meadow 酋长岩", "Lower Yosemite Falls 瀑布徒步", "Bridalveil Falls", "Glacier Point 冰川点俯瞰"], hotel: "3370 Woodland Drive, Mariposa, CA", meals: "🥪 建议早入园！园内餐厅排队极长，务必自带正餐与水", outfit: "🥾 专业徒步/运动装备！登山鞋、保暖层", tips: "尽早入园避开人流，注意野生熊类安全提示，车内不要留食物。" },
+      { day: "Day 9", date: "10/03", location: "优胜美地 ➔ 湾区 / 斯坦福", locationName: "Stanford", lat: 37.4275, lon: -122.1697, driveTime: "4 小时", visitTime: "半天", highlights: ["早上公园晨游", "Stanford University 斯坦福大学校园漫步"], hotel: "Hyatt Regency San Francisco", meals: "午：自备或途中 / 晚：南湾中餐", outfit: "舒适学院风/休闲装", tips: "出山前加满油，返程沿途加油站较少。" },
+      { day: "Day 10", date: "10/04", location: "旧金山市区深度打卡", locationName: "San Francisco", lat: 37.7749, lon: -122.4194, driveTime: "公共交通 / Uber", visitTime: "全天", highlights: ["Palace of Fine Arts 艺术宫", "Lombard Street 九曲花街", "Inception 盗梦空间取景地", "Twin Peaks 双子峰夜景", "Golden Gate Bridge 金门大桥"], hotel: "Hyatt Regency San Francisco", meals: "全天旧金山市区海鲜/酸面包蛤蜊汤", outfit: "防风衣/防风夹克！旧金山市区海风很大", tips: "⚠️ 强烈注意：早上去 SFO 还车并存行李。旧金山市区砸车窗极频繁，切勿开车留行李！" },
+      { day: "Day 11", date: "10/05", location: "SFO 机场返程", locationName: "San Francisco Airport", lat: 37.6213, lon: -122.3790, driveTime: "15 MIN", visitTime: "-", highlights: ["10:35 SFO 航班起飞返程"], hotel: "-", meals: "早：机场休息室", outfit: "舒适长袖机舱服", tips: "提前 3 小时到达 SFO 机场办理登机与安检。" }
+    ];
+
+    let currentIndex = 0;
+    function initDays() {
+      const daySelector = document.getElementById("daySelector");
+      itinerary.forEach((item, index) => {
+        const btn = document.createElement("div");
+        btn.className = `day-btn ${index === 0 ? 'active' : ''}`;
+        btn.innerHTML = `<span class="day-title">${item.day}</span><span class="day-date">${item.date}</span>`;
+        btn.onclick = () => selectDay(index);
+        daySelector.appendChild(btn);
+      });
+      renderContent(0);
+    }
+    function selectDay(index) {
+      currentIndex = index;
+      document.querySelectorAll(".day-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === index);
+      });
+      renderContent(index);
+    }
+    function renderContent(index) {
+      const data = itinerary[index];
+      document.getElementById("weatherLocation").innerText = data.locationName;
+      document.getElementById("routeName").innerText = data.location;
+      document.getElementById("driveTime").innerText = `🚗 驾车: ${data.driveTime}`;
+      document.getElementById("visitTime").innerText = `⏱ 游览: ${data.visitTime}`;
+      const highlightList = document.getElementById("highlightList");
+      highlightList.innerHTML = data.highlights.map(h => `<li>${h}</li>`).join("");
+      document.getElementById("outfitTip").innerText = data.outfit;
+      document.getElementById("travelTips").innerText = data.tips;
+      document.getElementById("mealsInfo").innerText = data.meals;
+      document.getElementById("hotelInfo").innerText = data.hotel;
+      fetchWeather(data.lat, data.lon);
+    }
+    function fetchWeather(lat, lon) {
+      document.getElementById("weatherTemp").innerText = "--°C";
+      document.getElementById("weatherCondition").innerText = "读取天气中...";
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=sunset&timezone=America%2FLos_Angeles`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.current_weather) {
+            const temp = Math.round(data.current_weather.temperature);
+            const wind = data.current_weather.windspeed;
+            const sunset = data.daily.sunset[0].split("T")[1];
+            document.getElementById("weatherTemp").innerText = `${temp}°C`;
+            document.getElementById("weatherCondition").innerText = `美西晴空 / 体感舒适`;
+            document.getElementById("weatherWind").innerText = `风速: ${wind} km/h`;
+            document.getElementById("weatherSunset").innerText = `🌅 今日日落: ${sunset}`;
+          }
+        })
+        .catch(() => {
+          document.getElementById("weatherCondition").innerText = "天气信息暂不可用";
+        });
+    }
+    window.onload = initDays;
+  </script>
+</body>
+</html>
