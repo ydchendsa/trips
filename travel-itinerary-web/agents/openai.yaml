@@ -1,0 +1,4 @@
+interface:
+  display_name: "旅行行程小程序"
+  short_description: "将行程 Excel 制作成手机旅行网站"
+  default_prompt: "Use $travel-itinerary-web to turn my itinerary spreadsheet into a researched, mobile-first travel planner."
